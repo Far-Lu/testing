@@ -337,7 +337,7 @@
 * 并通过镜像产生所需的各偏置电压和电流
 
 * --- 偏置电路子电路 ---
-.SUBCKT BIAS_CIRCUIT AVDD AVSS VBP VBP2 VBPC VBN VBNC
+.SUBCKT BIAS_CIRCUIT AVDD AVSS VBP VBPC VBN VBNC
 
 * === PMOS电流镜 (上半部分) ===
 * Mb1: 二极管连接, 基准支路 (Iref=10uA)
@@ -369,15 +369,15 @@ Mst3  nst  nb1  AVSS  AVSS  mn  W=2u  L=1u    $ 当电路正常后关断启动
 
 * === 输出偏置电压 VBP ===
 * VBP = nb1 栅电压, 用于PMOS电流镜
-* 连接输出
-Evbp VBP 0 nb1 0 1.0                           $ VBP缓冲输出
+* 通过小电阻连接输出 (避免E源拓扑问题)
+Rvbp nb1 VBP 0.01                               $ VBP连接输出
 
 * === NMOS偏置电压产生 VBN ===
 * 通过二极管连接NMOS产生 Vbn = Vgs_n
 Mb5  nb5  nb5  AVSS  AVSS  mn  W=46u  L=1u    $ 二极管连接NMOS
 Mb5p nb5  nb1  AVDD  AVDD  mp  W=18u  L=2u    $ PMOS电流源 (10uA)
 * VBN = nb5 ≈ Vth + Vov
-Evbn VBN 0 nb5 0 1.0                           $ VBN缓冲输出
+Rvbn nb5 VBN 0.01                               $ VBN连接输出
 
 * === NMOS共源共栅偏置 VBNC ===
 * 通过共源共栅偏置电路:
@@ -387,26 +387,17 @@ Mb6  nb6  nb6  nb7d  AVSS  mn  W=46u  L=1u    $ 二极管连接NMOS (共源共�
 Mb7  nb7d nb5  AVSS  AVSS  mn  W=46u  L=1u    $ NMOS gate=VBN
 Mb6p nb6  nb1  AVDD  AVDD  mp  W=18u  L=2u    $ PMOS电流源 (10uA)
 * VBNC = nb6
-Evbnc VBNC 0 nb6 0 1.0                         $ VBNC缓冲输出
-
-* === PMOS负载偏置 VBP2 ===
-* 与VBP相同电压 (PMOS电流源负载共用偏置)
-Evbp2 VBP2 0 nb1 0 1.0                         $ VBP2 = VBP
+Rvbnc nb6 VBNC 0.01                             $ VBNC连接输出
 
 * === PMOS共源共栅偏置 VBPC ===
 * 通过堆叠二极管连接PMOS:
 * VBPC = VDD - |Vov_M5_load| - |Vsg_M3_casc|
-Mb8  nb8d  nb8d  AVDD  AVDD  mp  W=18u  L=2u  $ 二极管PMOS (源接VDD)
-Mb9  nb9   nb8d  nb8d  AVDD  mp  W=18u  L=2u  $ 共源共栅PMOS
-Mb9n nb9   nb1   AVDD  AVDD  mp  W=18u  L=2u  $ ...电流源
-* 修正: 用更简单的偏置方法 - 二极管连接MOS堆叠
-* 重新设计PMOS cascode bias:
-* 用一个电流源驱动两个堆叠的二极管连接PMOS
+* 用电流源驱动两个堆叠的二极管连接PMOS
 Mb10  nbpc  nbpc  nb10s  AVDD  mp  W=18u  L=2u   $ 下层cascode diode
 Mb11  nb10s nb10s AVDD   AVDD  mp  W=18u  L=2u   $ 上层source diode
 Mb10n nbpc  nb5   AVSS   AVSS  mn  W=46u  L=1u   $ NMOS电流源 (10uA)
 * VBPC = nbpc
-Evbpc VBPC 0 nbpc 0 1.0                           $ VBPC缓冲输出
+Rvbpc nbpc VBPC 0.01                              $ VBPC连接输出
 
 .ENDS BIAS_CIRCUIT
 
@@ -415,7 +406,7 @@ Evbpc VBPC 0 nbpc 0 1.0                           $ VBPC缓冲输出
 *            七、折叠共源共栅OTA主电路
 * =====================================================================
 
-.SUBCKT OTA_FC VINP VINN VOUT AVDD AVSS VBP VBP2 VBPC VBN VBNC
+.SUBCKT OTA_FC VINP VINN VOUT AVDD AVSS VBP VBPC VBN VBNC
 
 * === PMOS尾电流源 M0 ===
 * I_tail = 200 uA, 由VBP偏置
@@ -433,8 +424,8 @@ M2  fb   VINN  ns  AVDD  mp  W=140u  L=2u     $ 输入管-
 * Id = 20 uA, (W/L)5 = 9, L=2um, W=18um
 * 偏置比例: 18/18 = 1:1 相对偏置Mb1(10uA), 实际=10uA
 * 需要2:1得到20uA → W=36um
-M5  d5   VBP2  AVDD  AVDD  mp  W=36u  L=2u    $ PMOS电流源 (20uA)
-M6  d6   VBP2  AVDD  AVDD  mp  W=36u  L=2u    $ PMOS电流源 (20uA)
+M5  d5   VBP   AVDD  AVDD  mp  W=36u  L=2u    $ PMOS电流源 (20uA)
+M6  d6   VBP   AVDD  AVDD  mp  W=36u  L=2u    $ PMOS电流源 (20uA)
 
 * === PMOS共源共栅 M3, M4 ===
 * (W/L)3 = 9, L=2um, W=18um
@@ -472,10 +463,10 @@ VDD  AVDD  0  DC 3.6
 VSS  AVSS  0  DC 0
 
 * --- 偏置电路实例化 ---
-XBIAS AVDD AVSS VBP VBP2 VBPC VBN VBNC BIAS_CIRCUIT
+XBIAS AVDD AVSS VBP VBPC VBN VBNC BIAS_CIRCUIT
 
 * --- OTA实例化 ---
-XOTA VINP VINN VOUT AVDD AVSS VBP VBP2 VBPC VBN VBNC OTA_FC
+XOTA VINP VINN VOUT AVDD AVSS VBP VBPC VBN VBNC OTA_FC
 
 * --- 负载电容 ---
 CL  VOUT  AVSS  30p
@@ -582,7 +573,7 @@ VIN_DC VINP 0 DC 0.6
 *   十三、各偏置节点电压打印 (便于调试)
 * =====================================================================
 
-.PRINT DC V(VBP) V(VBP2) V(VBPC) V(VBN) V(VBNC)
+.PRINT DC V(VBP) V(VBPC) V(VBN) V(VBNC)
 .PRINT DC V(XOTA.ns) V(XOTA.fa) V(XOTA.fb)
 
 .OPTIONS POST=2 ACCURATE PROBE

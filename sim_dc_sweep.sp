@@ -129,7 +129,7 @@ VIN  VINP 0 DC 0.6
 .MEASURE DC vout_at_07 FIND V(VOUT) AT=0.7
 
 * 计算直流增益 (Vout变化/Vin变化)
-.MEASURE DC dc_gain PARAM='(vout_at_05 - vout_at_07) / (0.07 - 0.05)'
+.MEASURE DC dc_gain PARAM='(vout_at_05 - vout_at_07) / (0.5 - 0.7)'
 
 * 输出节点
 .PRINT DC V(VOUT) V(VINP) I(VDD)
